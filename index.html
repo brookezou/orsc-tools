@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORSC Tools Query System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .control-group input,
+        .control-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .language-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .language-toggle button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.3s;
+        }
+
+        .language-toggle button:hover {
+            background: #5568d3;
+        }
+
+        .language-toggle button.active {
+            background: #764ba2;
+        }
+
+        .stats {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 6px;
+            color: #1976d2;
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+            vertical-align: top;
+        }
+
+        tbody tr:hover {
+            background: #f5f5f5;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafafa;
+        }
+
+        tbody tr:nth-child(even):hover {
+            background: #f0f0f0;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 18px;
+        }
+
+        .tool-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .tool-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .tool-link:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .details-section {
+            margin-top: 50px;
+        }
+
+        .details-section h2 {
+            color: #333;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .tool-detail {
+            margin-bottom: 50px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 5px solid #667eea;
+        }
+
+        .tool-detail h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .tool-detail .detail-item {
+            margin-bottom: 20px;
+        }
+
+        .tool-detail .detail-label {
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .tool-detail .detail-content {
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .tool-detail .detail-content ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        .tool-detail .detail-content li {
+            margin-bottom: 8px;
+        }
+
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: background 0.3s;
+            display: none;
+        }
+
+        .back-to-top:hover {
+            background: #764ba2;
+        }
+
+        .back-to-top.show {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .control-group {
+                min-width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="title">ORSC Tools Query System</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label id="search-label">Search Tool Name</label>
+                <input type="text" id="search-input" placeholder="Enter tool name...">
+            </div>
+            
+            <div class="control-group">
+                <label id="participants-label">Filter by Participants</label>
+                <select id="participants-filter">
+                    <option value="">All</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label id="course-label">Filter by Course</label>
+                <select id="course-filter">
+                    <option value="">All</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label id="purpose-label">Filter by Purpose</label>
+                <select id="purpose-filter">
+                    <option value="">All</option>
+                </select>
+            </div>
+            
+            <div class="control-group language-toggle">
+                <label id="language-label">Language:</label>
+                <button id="lang-zh" class="active">中文</button>
+                <button id="lang-en">English</button>
+            </div>
+        </div>
+        
+        <div class="stats" id="stats"></div>
+        
+        <div class="table-container">
+            <table id="tools-table">
+                <thead id="table-header"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="details-section" id="details-section">
+            <h2 id="details-title">Tool Details</h2>
+            <div id="details-content"></div>
+        </div>
+    </div>
+
+    <button class="back-to-top" id="back-to-top" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">↑</button>
+
+    <script>
+        // Data from markdown file - updated with latest content
+        const rawData = [
+            [1, "Third Entity", "关系系统教练认为，在关系中参与者外还有另外一层实体存在。除了关系中的人，还存在着关系本身这个实体。将关系本身视为一个独立且有自己需求和声音的\"第三方实体\"是很有用的。在关系系统教练中,这个第三方实体才是我们的客户。", "Couple/Partners or System/Team", "When a system is intuitive/feeling and comfortable with being imaginative; when a system is trying to clarify who they are and who they are not; When a Metaview would be helpful for the team", "位置1：三角形的第一个角代表你个人。站在你的角度,你有什么想说的？你的困扰是什么？想象你的伙伴就站在你的对面，直接向他们说出你的感受和对争议问题的看法站稳你的立场(EQ)<br>位置2：现在移动至第二个角，这是你伙伴的角度。请想象你是你的伙伴,站在他们的位置真正用全身体验他们所处的情境。在这个问题上他/她的立场和感受是什么?坚定地站在他/她的立场上<br>位置3： 移动到三角形的顶角，它位于另两个角中间，又与它们有一段距离。现在想象这里就是第三方实体也就是关系系统存在的位置。想象关系是一个有智慧的实体，让直觉告诉你这个实体会有什么样的感觉。让你自己成为关系本身(RSI)，有什么你知道，但是他们不知道的？<br>位置4：客户请回到你最初的位置(你的一角)。通过这个练习,你有什么新的发现？根据你的新发现,你有什么可以采取的行动?", "", "Fundamental", "约翰·列侬、保罗·麦卡特尼、乔治·哈里森、林戈·斯塔是四个个体。\"甲壳虫\"乐队则是他们的第三方实体™。"],
+            [2, "String Exercise", "", "Couple/Partners or System/Team", "When a group of interdependent people need to experience the Third Entity and what it means to be a system; When a system is trying to clarify who they are and who they are not", "", "", "Fundamental", ""],
+            [3, "DTA/DCA", "系统关系教练会与客户以一种协作的方式来建立联盟关系。然而，在关系系统教练中，建立同盟关系则复杂得多，因为客户需要通过教练先建立彼此之间的同盟关系。这就是建立团队同盟关系（DTA: Designing the Partnership Alliance）", "Individual or Couple/Partners or System/Team", "Consciously create system culture, atmosphere, and co-responsibility; When toxins appear or conflict shows up; When it gets \"hot\" and you need to \"cool it down\"; To further develop the system's conflict protocol within the DTA", "步骤1：找到团队议题（并暂时放置）建立情景：\"在我们进入议题之前...\" • 达成一起工作的共识<br>步骤2：开始制定 通过这些问题:• 氛围或文化?• 什么能够帮助伙伴关系积极发展?• 如果出现困难情况怎么办?<br>步骤3：建立 共同责任 通过询问每个人能够负起什么样的责任来建立共同责任感<br>步骤4：完成DTA的制定<br>使用这些ORSC技能:• 读取情绪场• 承认伙伴关系• 教练淡出", "", "Fundamental", "除了共同创造文化和氛围，团队或家庭达成可靠的行为协议也至关重要<br>DTA不光可以用在启动教练工作的情况下，团队和伙伴也可以就一个即将发生的事件建立DTA"],
+            [4, "Team Toxin Grid & Conflict Protocol", "", "Individual or Couple/Partners or System/Team", "When toxins appear or conflict shows up; When it gets \"hot\" and you need to \"cool it down\"; To further develop the system's conflict protocol within the DTA", "", "", "Fundamental", ""],
+            [5, "Informal Constellations", "", "Couple/Partners or System/Team", "When it is unclear where people are coming from and you want to create a \"snapshot\" of where the system is; When it would be helpful to depict how values are being lived by the system", "", "", "Fundamental", ""],
+            [6, "Relationship Myth", "", "Couple/Partners or System/Team", "When there is vision/mission drift; When there are experienced and new staff working together; When there is burnout (can bring people back to Essence level)", "", "", "Fundamental", ""],
+            [7, "Bringing Down the Vision", "", "Couple/Partners or System/Team", "When the vision is not alive – the emotional field feels heavy, lifeless, or without purpose; When creating a strategic plan or generating action steps for ideas or solutions; When a system needs to consider all 3 Levels of Reality; When a system needs to evaluate its current state of organization/operation", "", "", "Path", ""],
+            [8, "Force Field Analysis", "", "Individual or Couple/Partners or System/Team", "When a decision is being made and the system needs to examine forces for/against change; When the system needs to strengthen the forces for a decision or when a system needs to reduce the impact of opposition to a decision", "", "", "Intelligence", ""],
+            [9, "Working With Double Signals", "", "Individual or Couple/Partners or System/Team", "When mixed or conflicting signals appear; When 1 member of a system challenges primary identity of a system", "", "", "Intelligence", ""],
+            [10, "Alignment Work", "协调一致Alignment在字典中:\"为整体的各个部分找到相应的位置;调整,找到部分间恰当的关系或方向\"。协调一致(Alignment)总是可能的, 协调一致与达成共识(agreement)或完全和谐(harmony)不是同样的概念", "Couple/Partners or System/Team", "When toxins appear or conflict shows up", "阶段1：设置与压力释放• 确认当前议题• 为使用本工具设置背景• 背景设置并做双向压力释放（至少两轮，然后...）<br>阶段2：发现共同利益• 为什么解决这一问题对你们很重要？（问几次）• 你们是否愿意在没有指责的情况下解决本问题？（可选）• 你们能够就什么达成一致？• 回顾共同利益&体验• 在整个过程中读取情绪场域并肯定教练对象<br>阶段3：解决问题• 将问题拿出来放在前面• 客户成为一个团队来解决问题• 建立行动步骤", "", "Fundamental", "协调一致可存在于不同层面<br>为什么协调一致可以起作用 - 寻找立场背后的共同利益"],
+            [11, "Working With Realm", "", "Individual", "When client/team goes into or talks about going into a Realm", "", "", "Intelligence", ""],
+            [12, "De-triggering", "", "Individual or Couple/Partners or System/Team", "When triggers appear or could appear, based on behavior", "", "", "Systems Integration", ""],
+            [13, "Three Levels of Reality", "", "Individual or Couple/Partners or System/Team", "When a system or individual is stuck in one level, help them explore the other levels to get new information (e.g., dream level is where relationships and emotions live)", "", "", "Path", ""],
+            [14, "Dream Behind the Complaint", "", "Individual or Couple/Partners or System/Team", "When criticism or complaint shows up, this can reveal the longing or desire behind it", "", "", "Path", ""],
+            [15, "Deep Democracy", "", "System/Team", "When marginalized or unpopular voices are not being spoken and space needs to be made for what is not being said; When the system needs to take on or explore other perspectives; When roles have been attached to people in the system", "", "", "Intelligence", ""],
+            [16, "Lands Work", "", "Individual or Couple/Partners or System/Team", "When understanding or the appreciation of others' roles or functions is needed; When there are nested systems; When differences need to be honored; When there is role confusion", "", "", "Systems Integration", ""],
+            [17, "Roles (Inner, Outer, Secret Selves)", "", "Individual or Couple/Partners or System/Team", "When role nausea or confusion appears; When roles are occupied poorly; When there is a need for new roles; When the DTA needs to include role clarity or negotiation for how to occupy roles more skillfully", "", "", "Systems Integration", ""],
+            [18, "Ghosts & Time Spirits", "", "Individual or Couple/Partners or System/Team", "When there is a person, event, or thing not expressed or present in the system that is impacting the system (e.g., elephant in the room); DTA about how to deal with their power; When \"ism's\" are present", "", "", "Systems Integration", ""],
+            [19, "Unfolding Positive Secret Aspects", "", "Individual or Couple/Partners or System/Team", "When an individual wants to bring a part of themselves more into relationship with others", "", "", "Systems Integration", ""],
+            [20, "Discovering Essence Land With Aspects", "", "Individual or Couple/Partners or System/Team", "Icebreaker; When innovation or creativity is missing from a system and essence energy needs to be brought in; When flatness shows up in a system", "", "", "Systems Integration", ""],
+            [21, "Paper Constellations", "", "Individual or Couple/Partners or System/Team", "When there is dissonance in relationships; When something is \"off\" in a relationship and clarity is needed; When clarity is needed about what dynamics in a system are not working; When system needs to get unstuck", "", "", "Systems Integration", ""],
+            [22, "High Dream/Low Dream", "", "Individual or Couple/Partners or System/Team", "When there is a hot spot in a relationship; When a system needs to be reminded of their High Dream; When a system is stuck in Essence or Consensus Reality", "", "", "Geography", ""],
+            [23, "Partner as Truth Teller/Mirror (2% Truth)", "", "Individual or Couple/Partners or Partners", "When someone is behaving in a way that is difficult to be with; Strategy for processing feedback; Challenges people to critically think about the part they play in the system", "", "", "Geography", ""],
+            [24, "4 Abodes", "", "Individual or Couple/Partners or System/Team", "When a system needs to explore feelings or emotions; When a system needs to invite in compassion, empathy, intimacy, or connection", "", "", "Geography", ""],
+            [25, "Quantum Flirts", "", "Individual or Couple/Partners or System/Team", "When things show up in the world channel or interrupt what the system is doing; When the left brain is overused; When looking for the opportunity in chaos", "", "", "Geography", ""],
+            [26, "Appreciation Loop", "", "Couple/Partners or System/Team", "ANYTIME; When a system needs to navigate through conflict, this is a helpful starting point; When there is a lot of toxic communication", "", "", "Intelligence", ""],
+            [27, "Partner as Dream Door", "", "Couple/Partners", "When a system needs to dream into possibility or when there is an animated couple/business partners", "", "", "Intelligence", ""],
+            [28, "Metaskills Wheel", "", "Individual or Couple/Partners or System/Team", "When the system needs to consciously shift energy; When a system needs to feel into the mission, vision, and values", "", "", "Path", ""],
+            [29, "Original Myth", "", "Individual or Couple/Partners or System/Team", "When systems are in conflict and are invested in working through it; When there are experienced and new people in the system, it creates an opportunity to share history; When talk of the \"old way\" keeps surfacing; When the emotional field needs to be softened", "", "", "Path", ""],
+            [30, "Myth Change", "", "Individual or Couple/Partners or System/Team", "When a system is in a time of transition or change; When the past ways are getting in the way of the system moving forward", "", "", "Path", ""]
+        ];
+
+        // Process data
+        const toolsData = rawData.map(row => {
+            const toolName = row[1];
+            return {
+                no: row[0],
+                toolName: toolName,
+                toolDescription: row[2] || `${toolName} - To add`,
+                participants: row[3],
+                whenToUse: row[4],
+                procedures: row[5] || "Step 1: to add\nStep 2: to add\nStep 3: to add",
+                purpose: row[6] || "Purpose - to add",
+                inCourse: row[7],
+                notes: row[8] || ""
+            };
+        });
+
+        // Language translations
+        const translations = {
+            zh: {
+                title: "ORSC 工具查询系统",
+                searchLabel: "搜索工具名称",
+                searchPlaceholder: "输入工具名称...",
+                participantsLabel: "按参与者筛选",
+                courseLabel: "按课程筛选",
+                purposeLabel: "按目的筛选",
+                languageLabel: "语言：",
+                all: "全部",
+                stats: "显示 {count} 个工具（共 {total} 个）",
+                noResults: "没有找到匹配的工具",
+                detailsTitle: "工具详细描述",
+                headers: {
+                    no: "编号",
+                    toolName: "工具名称",
+                    toolDescription: "工具描述",
+                    participants: "参与者",
+                    purpose: "目的",
+                    inCourse: "所属课程"
+                },
+                detailLabels: {
+                    toolDescription: "工具描述",
+                    participants: "参与者",
+                    whenToUse: "使用时机（系统信号/线索）",
+                    procedures: "步骤",
+                    purpose: "目的",
+                    inCourse: "所属课程",
+                    notes: "备注"
+                }
+            },
+            en: {
+                title: "ORSC Tools Query System",
+                searchLabel: "Search Tool Name",
+                searchPlaceholder: "Enter tool name...",
+                participantsLabel: "Filter by Participants",
+                courseLabel: "Filter by Course",
+                purposeLabel: "Filter by Purpose",
+                languageLabel: "Language:",
+                all: "All",
+                stats: "Showing {count} tools (out of {total})",
+                noResults: "No matching tools found",
+                detailsTitle: "Tool Details",
+                headers: {
+                    no: "No.",
+                    toolName: "Tool Name",
+                    toolDescription: "Tool Description",
+                    participants: "Participants",
+                    purpose: "Purpose",
+                    inCourse: "in Course"
+                },
+                detailLabels: {
+                    toolDescription: "Tool Description",
+                    participants: "Participants",
+                    whenToUse: "When to use (System Signals/Cues)",
+                    procedures: "Procedures",
+                    purpose: "Purpose",
+                    inCourse: "in Course",
+                    notes: "Notes"
+                }
+            }
+        };
+
+        let currentLanguage = 'zh';
+        let filteredData = [...toolsData];
+
+        // Initialize
+        function init() {
+            populateFilters();
+            updateLanguage();
+            renderTable();
+            renderDetails();
+            setupEventListeners();
+            setupScrollToTop();
+        }
+
+        // Populate filter dropdowns
+        function populateFilters() {
+            const participantsSet = new Set();
+            const courseSet = new Set();
+            const purposeSet = new Set();
+
+            toolsData.forEach(tool => {
+                if (tool.participants) participantsSet.add(tool.participants);
+                if (tool.inCourse) courseSet.add(tool.inCourse);
+                if (tool.purpose) purposeSet.add(tool.purpose);
+            });
+
+            const participantsFilter = document.getElementById('participants-filter');
+            const courseFilter = document.getElementById('course-filter');
+            const purposeFilter = document.getElementById('purpose-filter');
+
+            [...participantsSet].sort().forEach(p => {
+                const option = document.createElement('option');
+                option.value = p;
+                option.textContent = p;
+                participantsFilter.appendChild(option);
+            });
+
+            [...courseSet].sort().forEach(c => {
+                const option = document.createElement('option');
+                option.value = c;
+                option.textContent = c;
+                courseFilter.appendChild(option);
+            });
+
+            [...purposeSet].sort().forEach(p => {
+                const option = document.createElement('option');
+                option.value = p;
+                option.textContent = p;
+                purposeFilter.appendChild(option);
+            });
+        }
+
+        // Update language
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            
+            document.getElementById('title').textContent = t.title;
+            document.getElementById('search-label').textContent = t.searchLabel;
+            document.getElementById('search-input').placeholder = t.searchPlaceholder;
+            document.getElementById('participants-label').textContent = t.participantsLabel;
+            document.getElementById('course-label').textContent = t.courseLabel;
+            document.getElementById('purpose-label').textContent = t.purposeLabel;
+            document.getElementById('language-label').textContent = t.languageLabel;
+            document.getElementById('details-title').textContent = t.detailsTitle;
+            
+            // Update "All" option in filters
+            document.querySelectorAll('#participants-filter option, #course-filter option, #purpose-filter option')
+                .forEach(opt => {
+                    if (opt.value === '') opt.textContent = t.all;
+                });
+
+            renderTable();
+            renderDetails();
+        }
+
+        // Render table (simplified)
+        function renderTable() {
+            const t = translations[currentLanguage];
+            const header = document.getElementById('table-header');
+            const body = document.getElementById('table-body');
+
+            // Clear existing content
+            header.innerHTML = '';
+            body.innerHTML = '';
+
+            // Create header - only show selected columns
+            const headerRow = document.createElement('tr');
+            const columnsToShow = ['no', 'toolName', 'toolDescription', 'participants', 'purpose', 'inCourse'];
+            columnsToShow.forEach(col => {
+                const th = document.createElement('th');
+                th.textContent = t.headers[col];
+                headerRow.appendChild(th);
+            });
+            header.appendChild(headerRow);
+
+            // Create body
+            if (filteredData.length === 0) {
+                const row = document.createElement('tr');
+                const cell = document.createElement('td');
+                cell.colSpan = columnsToShow.length;
+                cell.className = 'no-results';
+                cell.textContent = t.noResults;
+                row.appendChild(cell);
+                body.appendChild(row);
+            } else {
+                filteredData.forEach(tool => {
+                    const row = document.createElement('tr');
+                    
+                    // No. with link
+                    const noCell = document.createElement('td');
+                    const noLink = document.createElement('a');
+                    noLink.href = `#tool-${tool.no}`;
+                    noLink.className = 'tool-link';
+                    noLink.textContent = tool.no;
+                    noLink.onclick = (e) => {
+                        e.preventDefault();
+                        document.getElementById(`tool-${tool.no}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    };
+                    noCell.appendChild(noLink);
+                    row.appendChild(noCell);
+                    
+                    // Tool Name with link
+                    const nameCell = document.createElement('td');
+                    const nameLink = document.createElement('a');
+                    nameLink.href = `#tool-${tool.no}`;
+                    nameLink.className = 'tool-link';
+                    nameLink.textContent = tool.toolName;
+                    nameLink.onclick = (e) => {
+                        e.preventDefault();
+                        document.getElementById(`tool-${tool.no}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    };
+                    nameCell.appendChild(nameLink);
+                    row.appendChild(nameCell);
+                    
+                    // Tool Description
+                    const descCell = document.createElement('td');
+                    descCell.textContent = tool.toolDescription;
+                    row.appendChild(descCell);
+                    
+                    // Participants
+                    const participantsCell = document.createElement('td');
+                    participantsCell.textContent = tool.participants;
+                    row.appendChild(participantsCell);
+                    
+                    // Purpose
+                    const purposeCell = document.createElement('td');
+                    purposeCell.textContent = tool.purpose;
+                    row.appendChild(purposeCell);
+                    
+                    // in Course
+                    const courseCell = document.createElement('td');
+                    courseCell.textContent = tool.inCourse;
+                    row.appendChild(courseCell);
+                    
+                    body.appendChild(row);
+                });
+            }
+
+            // Update stats
+            updateStats();
+        }
+
+        // Render details section
+        function renderDetails() {
+            const t = translations[currentLanguage];
+            const detailsContent = document.getElementById('details-content');
+            detailsContent.innerHTML = '';
+
+            toolsData.forEach(tool => {
+                const detailDiv = document.createElement('div');
+                detailDiv.className = 'tool-detail';
+                detailDiv.id = `tool-${tool.no}`;
+
+                const title = document.createElement('h3');
+                title.textContent = `${tool.no}. ${tool.toolName}`;
+                detailDiv.appendChild(title);
+
+                // Tool Description
+                if (tool.toolDescription) {
+                    const descItem = document.createElement('div');
+                    descItem.className = 'detail-item';
+                    const descLabel = document.createElement('span');
+                    descLabel.className = 'detail-label';
+                    descLabel.textContent = t.detailLabels.toolDescription + ':';
+                    descItem.appendChild(descLabel);
+                    const descContent = document.createElement('div');
+                    descContent.className = 'detail-content';
+                    descContent.innerHTML = tool.toolDescription.replace(/<br>/g, '<br>');
+                    descItem.appendChild(descContent);
+                    detailDiv.appendChild(descItem);
+                }
+
+                // Participants
+                if (tool.participants) {
+                    const partItem = document.createElement('div');
+                    partItem.className = 'detail-item';
+                    const partLabel = document.createElement('span');
+                    partLabel.className = 'detail-label';
+                    partLabel.textContent = t.detailLabels.participants + ':';
+                    partItem.appendChild(partLabel);
+                    const partContent = document.createElement('div');
+                    partContent.className = 'detail-content';
+                    partContent.textContent = tool.participants;
+                    partItem.appendChild(partContent);
+                    detailDiv.appendChild(partItem);
+                }
+
+                // When to use
+                if (tool.whenToUse) {
+                    const whenItem = document.createElement('div');
+                    whenItem.className = 'detail-item';
+                    const whenLabel = document.createElement('span');
+                    whenLabel.className = 'detail-label';
+                    whenLabel.textContent = t.detailLabels.whenToUse + ':';
+                    whenItem.appendChild(whenLabel);
+                    const whenContent = document.createElement('div');
+                    whenContent.className = 'detail-content';
+                    whenContent.textContent = tool.whenToUse;
+                    whenItem.appendChild(whenContent);
+                    detailDiv.appendChild(whenItem);
+                }
+
+                // Procedures
+                if (tool.procedures) {
+                    const procItem = document.createElement('div');
+                    procItem.className = 'detail-item';
+                    const procLabel = document.createElement('span');
+                    procLabel.className = 'detail-label';
+                    procLabel.textContent = t.detailLabels.procedures + ':';
+                    procItem.appendChild(procLabel);
+                    const procContent = document.createElement('div');
+                    procContent.className = 'detail-content';
+                    procContent.innerHTML = tool.procedures.replace(/<br>/g, '<br>');
+                    procItem.appendChild(procContent);
+                    detailDiv.appendChild(procItem);
+                }
+
+                // Purpose
+                if (tool.purpose) {
+                    const purpItem = document.createElement('div');
+                    purpItem.className = 'detail-item';
+                    const purpLabel = document.createElement('span');
+                    purpLabel.className = 'detail-label';
+                    purpLabel.textContent = t.detailLabels.purpose + ':';
+                    purpItem.appendChild(purpLabel);
+                    const purpContent = document.createElement('div');
+                    purpContent.className = 'detail-content';
+                    purpContent.textContent = tool.purpose;
+                    purpItem.appendChild(purpContent);
+                    detailDiv.appendChild(purpItem);
+                }
+
+                // in Course
+                if (tool.inCourse) {
+                    const courseItem = document.createElement('div');
+                    courseItem.className = 'detail-item';
+                    const courseLabel = document.createElement('span');
+                    courseLabel.className = 'detail-label';
+                    courseLabel.textContent = t.detailLabels.inCourse + ':';
+                    courseItem.appendChild(courseLabel);
+                    const courseContent = document.createElement('div');
+                    courseContent.className = 'detail-content';
+                    courseContent.textContent = tool.inCourse;
+                    courseItem.appendChild(courseContent);
+                    detailDiv.appendChild(courseItem);
+                }
+
+                // Notes
+                if (tool.notes) {
+                    const notesItem = document.createElement('div');
+                    notesItem.className = 'detail-item';
+                    const notesLabel = document.createElement('span');
+                    notesLabel.className = 'detail-label';
+                    notesLabel.textContent = t.detailLabels.notes + ':';
+                    notesItem.appendChild(notesLabel);
+                    const notesContent = document.createElement('div');
+                    notesContent.className = 'detail-content';
+                    notesContent.innerHTML = tool.notes.replace(/<br>/g, '<br>');
+                    notesItem.appendChild(notesContent);
+                    detailDiv.appendChild(notesItem);
+                }
+
+                detailsContent.appendChild(detailDiv);
+            });
+        }
+
+        // Update statistics
+        function updateStats() {
+            const t = translations[currentLanguage];
+            const stats = document.getElementById('stats');
+            stats.textContent = t.stats
+                .replace('{count}', filteredData.length)
+                .replace('{total}', toolsData.length);
+        }
+
+        // Filter and search
+        function applyFilters() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase().trim();
+            const participantsFilter = document.getElementById('participants-filter').value;
+            const courseFilter = document.getElementById('course-filter').value;
+            const purposeFilter = document.getElementById('purpose-filter').value;
+
+            filteredData = toolsData.filter(tool => {
+                // Search filter (fuzzy match on tool name)
+                if (searchTerm && !tool.toolName.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+
+                // Participants filter
+                if (participantsFilter && tool.participants !== participantsFilter) {
+                    return false;
+                }
+
+                // Course filter
+                if (courseFilter && tool.inCourse !== courseFilter) {
+                    return false;
+                }
+
+                // Purpose filter
+                if (purposeFilter && tool.purpose !== purposeFilter) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            renderTable();
+        }
+
+        // Setup scroll to top button
+        function setupScrollToTop() {
+            const backToTop = document.getElementById('back-to-top');
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    backToTop.classList.add('show');
+                } else {
+                    backToTop.classList.remove('show');
+                }
+            });
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            document.getElementById('search-input').addEventListener('input', applyFilters);
+            document.getElementById('participants-filter').addEventListener('change', applyFilters);
+            document.getElementById('course-filter').addEventListener('change', applyFilters);
+            document.getElementById('purpose-filter').addEventListener('change', applyFilters);
+
+            document.getElementById('lang-zh').addEventListener('click', () => {
+                currentLanguage = 'zh';
+                document.getElementById('lang-zh').classList.add('active');
+                document.getElementById('lang-en').classList.remove('active');
+                updateLanguage();
+            });
+
+            document.getElementById('lang-en').addEventListener('click', () => {
+                currentLanguage = 'en';
+                document.getElementById('lang-en').classList.add('active');
+                document.getElementById('lang-zh').classList.remove('active');
+                updateLanguage();
+            });
+        }
+
+        // Initialize on page load
+        init();
+    </script>
+</body>
+</html>
